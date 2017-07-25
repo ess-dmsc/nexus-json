@@ -53,7 +53,7 @@ def _tree_to_json_string(tree):
 def tree_to_json(tree):
     json_tree = _tree_to_json_string(tree)
     parsed = json.loads(json_tree)
-    beautified_json_tree = json.dumps(parsed, indent=4, sort_keys=True)
+    beautified_json_tree = json.dumps(parsed, indent=2, sort_keys=True)
     return beautified_json_tree
 
 
