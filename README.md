@@ -1,6 +1,6 @@
 # NeXus-JSON
 
-Experiment producing a JSON representation of NeXus files.
+Produce JSON schema for NeXus files using [nexusformat](https://github.com/nexpy/nexusformat). The schema are intended to be used with our [NeXus file writer](https://github.com/ess-dmsc/kafka-to-nexus).
 
 Written and tested with Python 3.5 only.
 Dependencies can be installed with `pip`:
