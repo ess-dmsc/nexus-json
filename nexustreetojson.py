@@ -55,7 +55,6 @@ def tree_to_json(tree):
     json_tree = _tree_to_json_string(tree)
     parsed = json.loads(json_tree)
     beautified_json_tree = json.dumps(parsed, indent=4, sort_keys=True)
-    print(beautified_json_tree)
     return beautified_json_tree
 
 
