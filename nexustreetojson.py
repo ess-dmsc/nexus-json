@@ -15,17 +15,16 @@ def _attrs_to_json(tree):
     names = sorted(tree.attrs)
     result = []
     for k in names:
-        txt1 = u'{"' + k
         if nexusformat.nexus.tree.is_text(tree.attrs[k]):
-            txt2 = u'": "' + nexusformat.nexus.tree.text(tree.attrs[k]) + '"'
+            attr_string = u'": "' + nexusformat.nexus.tree.text(tree.attrs[k]) + '"'
         elif _is_array(tree.attrs[k]):
             array_string = np.array2string(tree.attrs[k], separator=', ').replace(' ', '')
             array_string = array_string.replace('.,', '.0,')
             array_string = array_string.replace('.]', '.0]')
-            txt2 = u'": ' + array_string
+            attr_string = u'": ' + array_string
         else:
-            txt2 = u'": ' + nexusformat.nexus.tree.text(tree.attrs[k])
-        txt = (txt1 + txt2).replace("u'", "'")
+            attr_string = u'": ' + nexusformat.nexus.tree.text(tree.attrs[k])
+        txt = (u'{"' + k + attr_string).replace("u'", "'")
         txt += '}'
         result.append(txt)
     result[0] = '\"attributes\": [' + result[0]
@@ -60,4 +59,5 @@ def tree_to_json(tree):
 
 if __name__ == '__main__':
     nexus_file = nexusformat.nexus.nxload('nexus_files/SANS2D_example.nxs')
-    tree_to_json(nexus_file)
+    json_schema = tree_to_json(nexus_file)
+    print(json_schema)
