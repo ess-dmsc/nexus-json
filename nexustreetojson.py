@@ -3,22 +3,22 @@ import json
 import numpy as np
 
 
-def name_to_json(tree):
+def _name_to_json(tree):
     return '"name": "' + tree.nxname + '"'
 
 
-def is_array(possible_array):
+def _is_array(possible_array):
     return isinstance(possible_array, np.ndarray)
 
 
-def attrs_to_json(tree):
+def _attrs_to_json(tree):
     names = sorted(tree.attrs)
     result = []
     for k in names:
         txt1 = u'{"' + k
         if nexusformat.nexus.tree.is_text(tree.attrs[k]):
             txt2 = u'": "' + nexusformat.nexus.tree.text(tree.attrs[k]) + '"'
-        elif is_array(tree.attrs[k]):
+        elif _is_array(tree.attrs[k]):
             array_string = np.array2string(tree.attrs[k], separator=', ').replace(' ', '')
             array_string = array_string.replace('.,', '.0,')
             array_string = array_string.replace('.]', '.0]')
@@ -33,10 +33,10 @@ def attrs_to_json(tree):
     return ', '.join(result)
 
 
-def tree_to_json(tree):
-    result = ['{' + name_to_json(tree)]
+def _tree_to_json_string(tree):
+    result = ['{' + _name_to_json(tree)]
     if tree.attrs:
-        result.append(attrs_to_json(tree))
+        result.append(_attrs_to_json(tree))
 
     if hasattr(tree, 'entries'):
         entries = tree.entries
@@ -44,14 +44,14 @@ def tree_to_json(tree):
             children = []
             names = sorted(entries)
             for k in names:
-                children.append(tree_to_json(entries[k]))
+                children.append(_tree_to_json_string(entries[k]))
             result.append('"children": [' + ','.join(children) + ']')
 
     result[-1] += '}'
     return ', '.join(result)
 
 
-def print_tree(tree):
+def tree_to_json(tree):
     json_tree = tree_to_json(tree)
     parsed = json.loads(json_tree)
     beautified_json_tree = json.dumps(parsed, indent=4, sort_keys=True)
@@ -61,4 +61,4 @@ def print_tree(tree):
 
 if __name__ == '__main__':
     nexus_file = nexusformat.nexus.nxload('nexus_files/SANS2D_example.nxs')
-    print_tree(nexus_file)
+    tree_to_json(nexus_file)
