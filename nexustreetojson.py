@@ -12,35 +12,47 @@ def _is_array(possible_array):
 
 
 def _attrs_to_json(tree):
-    names = sorted(tree.attrs)
     result = []
-    for k in names:
-        if nexusformat.nexus.tree.is_text(tree.attrs[k]):
-            attr_string = u'": "' + nexusformat.nexus.tree.text(tree.attrs[k]) + '"'
-        elif _is_array(tree.attrs[k]):
-            array_string = np.array2string(tree.attrs[k], separator=', ').replace(' ', '')
-            array_string = array_string.replace('.,', '.0,')
-            array_string = array_string.replace('.]', '.0]')
-            attr_string = u'": ' + array_string
-        else:
-            attr_string = u'": ' + nexusformat.nexus.tree.text(tree.attrs[k])
-        txt = (u'{"' + k + attr_string).replace("u'", "'")
-        txt += '}'
-        result.append(txt)
-    result[0] = '\"attributes\": [' + result[0]
-    result[-1] += ']'
-    return ', '.join(result)
+    if tree.attrs:
+        for k in tree.attrs:
+            if nexusformat.nexus.tree.is_text(tree.attrs[k]):
+                attr_string = u'": "' + nexusformat.nexus.tree.text(tree.attrs[k]) + '"'
+            elif _is_array(tree.attrs[k]):
+                array_string = np.array2string(tree.attrs[k], separator=', ').replace(' ', '')
+                array_string = array_string.replace('.,', '.0,')
+                array_string = array_string.replace('.]', '.0]')
+                attr_string = u'": ' + array_string
+            else:
+                attr_string = u'": ' + nexusformat.nexus.tree.text(tree.attrs[k])
+            txt = (u'"' + k + attr_string).replace("u'", "'")
+            result.append(txt)
+    if tree.nxclass != "NXfield":
+        result.append('"NX_class": "' + tree.nxclass + '"')
+    if result:
+        result[0] = '\"attributes\": {' + result[0]
+        result[-1] += '}'
+        return_lines = ', '.join(result)
+    else:
+        return_lines = None
+    return return_lines
 
 
 def _tree_to_json_string(tree):
-    result = ['{' + _name_to_json(tree)]
-    if tree.attrs:
-        result.append(_attrs_to_json(tree))
-
-    if tree.nxclass is "NXfield":
-        result.append('"type": "dataset"')
+    result = []
+    children_prepend = ""
+    children_append = ""
+    if tree.nxname is "root" and tree.nxclass is not "NXfield":
+        children_prepend = '{"nexus_structure": {'
+        children_append = '}'
     else:
-        result.append('"type": "group"')
+        result.append('{' + _name_to_json(tree))
+        attrs_json = _attrs_to_json(tree)
+        if attrs_json:
+            result.append(attrs_json)
+        if tree.nxclass is "NXfield":
+            result.append('"type": "dataset"')
+        else:
+            result.append('"type": "group"')
 
     if hasattr(tree, 'entries'):
         entries = tree.entries
@@ -49,7 +61,7 @@ def _tree_to_json_string(tree):
             names = sorted(entries)
             for k in names:
                 children.append(_tree_to_json_string(entries[k]))
-            result.append('"children": [' + ','.join(children) + ']')
+            result.append(children_prepend + '"children": [' + ','.join(children) + ']' + children_append)
 
     result[-1] += '}'
     return ', '.join(result)
