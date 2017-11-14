@@ -59,7 +59,7 @@ def _tree_to_json_string(tree):
     result = []
     children_prepend = ""
     children_append = ""
-    if tree.nxname is "root" and tree.nxclass is not "NXfield":
+    if isinstance(tree, nexusformat.nexus.NXroot):
         children_prepend = '{"nexus_structure": {'
         children_append = '}'
     else:
