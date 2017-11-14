@@ -4,6 +4,12 @@ import numpy as np
 
 
 def _name_to_json(tree):
+    """
+    Create line of JSON defining the group or dataset's name
+
+    :param tree: Group or dataset tree node
+    :return: Line of JSON defining the name
+    """
     return '"name": "' + tree.nxname + '"'
 
 
@@ -12,6 +18,12 @@ def _is_array(possible_array):
 
 
 def _attrs_to_json(tree):
+    """
+    Creates a list of lines of JSON for the attributes of a given group or dataset
+
+    :param tree: Group or dataset tree node
+    :return: List of lines of JSON
+    """
     result = []
     if tree.attrs:
         for k in tree.attrs:
@@ -38,6 +50,12 @@ def _attrs_to_json(tree):
 
 
 def _tree_to_json_string(tree):
+    """
+    Create a JSON string describing the NeXus file
+
+    :param tree: Root node of the tree
+    :return: JSON string (not pretty)
+    """
     result = []
     children_prepend = ""
     children_append = ""
@@ -68,6 +86,12 @@ def _tree_to_json_string(tree):
 
 
 def tree_to_json(tree):
+    """
+    Create a JSON string describing the NeXus file
+
+    :param tree: Root node of the tree
+    :return: Formatted JSON string
+    """
     json_tree = _tree_to_json_string(tree)
     parsed = json.loads(json_tree)
     beautified_json_tree = json.dumps(parsed, indent=2, sort_keys=False)
