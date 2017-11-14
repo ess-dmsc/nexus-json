@@ -37,6 +37,11 @@ def _tree_to_json_string(tree):
     if tree.attrs:
         result.append(_attrs_to_json(tree))
 
+    if tree.nxclass is "NXfield":
+        result.append('"type": "dataset"')
+    else:
+        result.append('"type": "group"')
+
     if hasattr(tree, 'entries'):
         entries = tree.entries
         if entries:
@@ -53,7 +58,7 @@ def _tree_to_json_string(tree):
 def tree_to_json(tree):
     json_tree = _tree_to_json_string(tree)
     parsed = json.loads(json_tree)
-    beautified_json_tree = json.dumps(parsed, indent=2, sort_keys=True)
+    beautified_json_tree = json.dumps(parsed, indent=2, sort_keys=False)
     return beautified_json_tree
 
 
