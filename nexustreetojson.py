@@ -2,6 +2,13 @@ import nexusformat.nexus
 import json
 import numpy as np
 
+"""
+Creates a JSON string of the structure of an existing NeXus file in the format for kafka-to-nexus.
+
+It is intended to be helpful in creating examples of the JSON command.
+Currently omits values of datasets; typically these would be populated from Kafka streams. 
+"""
+
 
 def _name_to_json(tree):
     """
