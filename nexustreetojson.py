@@ -1,111 +1,112 @@
-import nexusformat.nexus
+import numpy
+import nexusformat.nexus as nexus
 import json
-import numpy as np
-
-"""
-Creates a JSON string of the structure of an existing NeXus file in the format for kafka-to-nexus.
-
-It is intended to be helpful in creating examples of the JSON command.
-Currently omits values of datasets; typically these would be populated from Kafka streams. 
-"""
 
 
-def _name_to_json(tree):
+class NexusToDictConverter(object):
+    """ Class used to convert nexus format root to python dict
     """
-    Create line of JSON defining the group or dataset's name
 
-    :param tree: Group or dataset tree node
-    :return: Line of JSON defining the name
-    """
-    return '"name": "' + tree.nxname + '"'
+    def __init__(self):
+        self._kafka_streams = {}
 
+    def convert(self, nexus_root, streams):
+        """ Converts the given nexus_root to dict with correct replacement of
+         the streams
+        :param nexus_root
+        :param streams:
+        :return: dictionary
+        """
+        self._kafka_streams = streams
+        return {
+            "children": [self._root_to_dict(entry)
+                         for _, entry in nexus_root.entries.items()]
+        }
 
-def _is_array(possible_array):
-    return isinstance(possible_array, np.ndarray)
-
-
-def _attrs_to_json(tree):
-    """
-    Creates a list of lines of JSON for the attributes of a given group or dataset
-
-    :param tree: Group or dataset tree node
-    :return: List of lines of JSON
-    """
-    result = []
-    if tree.attrs:
-        for k in tree.attrs:
-            if nexusformat.nexus.tree.is_text(tree.attrs[k]):
-                attr_string = u'": "' + nexusformat.nexus.tree.text(tree.attrs[k]) + '"'
-            elif _is_array(tree.attrs[k]):
-                array_string = np.array2string(tree.attrs[k], separator=', ').replace(' ', '')
-                array_string = array_string.replace('.,', '.0,')
-                array_string = array_string.replace('.]', '.0]')
-                attr_string = u'": ' + array_string
-            else:
-                attr_string = u'": ' + nexusformat.nexus.tree.text(tree.attrs[k])
-            txt = (u'"' + k + attr_string).replace("u'", "'")
-            result.append(txt)
-    if tree.nxclass != "NXfield":
-        result.append('"NX_class": "' + tree.nxclass + '"')
-    if result:
-        result[0] = '\"attributes\": {' + result[0]
-        result[-1] += '}'
-        return_lines = ', '.join(result)
-    else:
-        return_lines = None
-    return return_lines
-
-
-def _tree_to_json_string(tree):
-    """
-    Create a JSON string describing the NeXus file
-
-    :param tree: Root node of the tree
-    :return: JSON string (not pretty)
-    """
-    result = []
-    children_prepend = ""
-    children_append = ""
-    if isinstance(tree, nexusformat.nexus.NXroot):
-        children_prepend = '{"nexus_structure": {'
-        children_append = '}'
-    else:
-        result.append('{' + _name_to_json(tree))
-        attrs_json = _attrs_to_json(tree)
-        if attrs_json:
-            result.append(attrs_json)
-        if tree.nxclass is "NXfield":
-            result.append('"type": "dataset"')
+    def _root_to_dict(self, root):
+        if hasattr(root, 'entries'):
+            root_dict = self._handle_group(root)
         else:
-            result.append('"type": "group"')
+            root_dict = self._handle_dataset(root)
 
-    if hasattr(tree, 'entries'):
-        entries = tree.entries
-        if entries:
-            children = []
-            names = sorted(entries)
-            for k in names:
-                children.append(_tree_to_json_string(entries[k]))
-            result.append(children_prepend + '"children": [' + ','.join(children) + ']' + children_append)
+        # Assign the attributes
+        if root.attrs:
+            for attr_name, attr in root.attrs.items():
+                if isinstance(attr, nexus.tree.NXattr):
+                    attr = attr.nxdata
+                if isinstance(attr, numpy.ndarray):
+                    attr = attr.tolist()
+                root_dict["attributes"][attr_name] = attr
+        return root_dict
 
-    result[-1] += '}'
-    return ', '.join(result)
+    def _handle_group(self, root):
+        root_dict = {
+            "type": "group",
+            "name": root.nxname,
+            "attributes": {
+                "NX_class": root.nxclass
+            },
+            "children": []
+        }
+        # Add the entries
+        entries = root.entries
+        if root.nxpath in self._kafka_streams:
+            root_dict["children"].append({
+                "type": "stream",
+                "stream": self._kafka_streams[root.nxpath]
+            })
+        elif entries:
+            for entry in entries:
+                child_dict = self._root_to_dict(entries[entry])
+                root_dict["children"].append(child_dict)
+
+        return root_dict
+
+    @staticmethod
+    def _handle_dataset(root):
+        data = root.nxdata
+        dataset_type = str(root.dtype)
+        if isinstance(data, numpy.ndarray):
+            data = data.tolist()
+        if dataset_type[:2] == '|S':
+            data = str(data)
+            dataset_type = 'str'
+
+        root_dict = {
+            "type": "dataset",
+            "name": root.nxname,
+            "dataset": {
+                "type": dataset_type
+            },
+            "values": data,
+            "attributes": {}
+        }
+        return root_dict
 
 
-def tree_to_json(tree):
+def tree_to_json_file(tree_dict, filename):
     """
-    Create a JSON string describing the NeXus file
+    Create a JSON file describing the NeXus file
+    WARNING, output files can easily be 10 times the size of input NeXus file
 
-    :param tree: Root node of the tree
-    :return: Formatted JSON string
+    :param tree_dict: Root node of the tree
+    :param filename: Name for the output file
     """
-    json_tree = _tree_to_json_string(tree)
-    parsed = json.loads(json_tree)
-    beautified_json_tree = json.dumps(parsed, indent=2, sort_keys=False)
-    return beautified_json_tree
+    with open(filename, 'w') as outfile:
+        json.dump(tree_dict, outfile, indent=2, sort_keys=False)
 
 
 if __name__ == '__main__':
-    nexus_file = nexusformat.nexus.nxload('nexus_files/SANS2D_example.nxs')
-    json_schema = tree_to_json(nexus_file)
-    print(json_schema)
+
+    event_data_path = "/raw_data_1/detector_1_events"
+    event_data_stream_options = {
+        "topic": "TEST_events",
+        "source": "TEST",
+        "nexus_path": event_data_path
+    }
+    streams = {event_data_path: event_data_stream_options}
+
+    converter = NexusToDictConverter()
+    nexus_file = nexus.nxload("nexus_files/SANS2D_example.nxs")
+    tree = converter.convert(nexus_file, streams)
+    tree_to_json_file(tree, "SAN2D_example2.json")
