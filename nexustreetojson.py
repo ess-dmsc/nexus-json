@@ -69,7 +69,7 @@ class NexusToDictConverter(object):
         if isinstance(data, numpy.ndarray):
             data = data.tolist()
         if dataset_type[:2] == '|S':
-            data = str(data)
+            data = data.decode('utf-8')
             dataset_type = 'str'
 
         root_dict = {
