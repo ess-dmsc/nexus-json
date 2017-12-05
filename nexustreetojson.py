@@ -1,6 +1,7 @@
 import numpy
 import nexusformat.nexus as nexus
 import json
+import uuid
 
 
 class NexusToDictConverter(object):
@@ -84,7 +85,7 @@ class NexusToDictConverter(object):
         return root_dict
 
 
-def tree_to_json_file(tree_dict, filename):
+def object_to_json_file(tree_dict, filename):
     """
     Create a JSON file describing the NeXus file
     WARNING, output files can easily be 10 times the size of input NeXus file
@@ -96,12 +97,28 @@ def tree_to_json_file(tree_dict, filename):
         json.dump(tree_dict, outfile, indent=2, sort_keys=False)
 
 
+def create_writer_command(nexus_structure, output_filename, broker="localhost:9092", job_id=""):
+    if not job_id:
+        job_id = str(uuid.uuid1())
+    command = {
+        "cmd": "FileWriter_new",
+        "broker": broker,
+        "job_id": job_id,
+        "file_attributes": {
+            "file_name": output_filename
+        },
+        "nexus_structure": nexus_structure
+    }
+    return command
+
+
 if __name__ == '__main__':
 
     event_data_path = "/raw_data_1/detector_1_events"
     event_data_stream_options = {
         "topic": "TEST_events",
         "source": "TEST",
+        "module": "ev42",
         "nexus_path": event_data_path
     }
     streams = {event_data_path: event_data_stream_options}
@@ -109,4 +126,5 @@ if __name__ == '__main__':
     converter = NexusToDictConverter()
     nexus_file = nexus.nxload("nexus_files/SANS2D_example.nxs")
     tree = converter.convert(nexus_file, streams)
-    tree_to_json_file(tree, "SAN2D_example2.json")
+    writer_command = create_writer_command(tree, "SANS2D_example_output.nxs")
+    object_to_json_file(writer_command, "SANS2D_example.json")
