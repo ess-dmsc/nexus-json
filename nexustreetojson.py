@@ -71,7 +71,7 @@ class NexusToDictConverter(object):
             data = data.tolist()
         if dataset_type[:2] == '|S':
             data = data.decode('utf-8')
-            dataset_type = 'str'
+            dataset_type = 'string'
 
         root_dict = {
             "type": "dataset",
