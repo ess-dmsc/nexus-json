@@ -97,10 +97,10 @@ def object_to_json_file(tree_dict, filename):
         json.dump(tree_dict, outfile, indent=2, sort_keys=False)
 
 
-def create_writer_command(nexus_structure, output_filename, broker="localhost:9092", job_id=""):
+def create_writer_commands(nexus_structure, output_filename, broker="localhost:9092", job_id=""):
     if not job_id:
         job_id = str(uuid.uuid1())
-    command = {
+    write_cmd = {
         "cmd": "FileWriter_new",
         "broker": broker,
         "job_id": job_id,
@@ -109,7 +109,11 @@ def create_writer_command(nexus_structure, output_filename, broker="localhost:90
         },
         "nexus_structure": nexus_structure
     }
-    return command
+    stop_cmd = {
+        "cmd": "FileWriter_stop",
+        "job_id": job_id
+    }
+    return write_cmd, stop_cmd
 
 
 if __name__ == '__main__':
@@ -126,5 +130,7 @@ if __name__ == '__main__':
     converter = NexusToDictConverter()
     nexus_file = nexus.nxload("nexus_files/SANS2D_example.nxs")
     tree = converter.convert(nexus_file, streams)
-    writer_command = create_writer_command(tree, "SANS2D_example_output.nxs")
-    object_to_json_file(writer_command, "SANS2D_example.json")
+    write_command, stop_command = create_writer_commands(tree, "SANS2D_example_output.nxs")
+    object_to_json_file(write_command, "SANS2D_example.json")
+    object_to_json_file(stop_command, "stop_SANS2D_example.json")
+
