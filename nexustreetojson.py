@@ -65,13 +65,19 @@ class NexusToDictConverter(object):
 
     @staticmethod
     def _handle_dataset(root):
+        size = 1
         data = root.nxdata
         dataset_type = str(root.dtype)
         if isinstance(data, numpy.ndarray):
+            size = data.shape
             data = data.tolist()
         if dataset_type[:2] == '|S':
             data = data.decode('utf-8')
             dataset_type = 'string'
+        elif dataset_type == "float64":
+            dataset_type = "double"
+        elif dataset_type == "float32":
+            dataset_type = "float"
 
         root_dict = {
             "type": "dataset",
@@ -82,6 +88,9 @@ class NexusToDictConverter(object):
             "values": data,
             "attributes": {}
         }
+        if size != 1:
+            root_dict['dataset']['size'] = size
+
         return root_dict
 
 
