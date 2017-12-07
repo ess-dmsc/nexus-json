@@ -4,16 +4,18 @@ import json
 import uuid
 
 
-class NexusToDictConverter(object):
-    """ Class used to convert nexus format root to python dict
+class NexusToDictConverter:
+    """
+    Class used to convert nexus format root to python dict
     """
 
     def __init__(self):
         self._kafka_streams = {}
 
     def convert(self, nexus_root, streams):
-        """ Converts the given nexus_root to dict with correct replacement of
-         the streams
+        """
+        Converts the given nexus_root to dict with correct replacement of
+        the streams
         :param nexus_root
         :param streams:
         :return: dictionary
@@ -123,23 +125,3 @@ def create_writer_commands(nexus_structure, output_filename, broker="localhost:9
         "job_id": job_id
     }
     return write_cmd, stop_cmd
-
-
-if __name__ == '__main__':
-
-    event_data_path = "/raw_data_1/detector_1_events"
-    event_data_stream_options = {
-        "topic": "TEST_events",
-        "source": "TEST",
-        "module": "ev42",
-        "nexus_path": event_data_path
-    }
-    streams = {event_data_path: event_data_stream_options}
-
-    converter = NexusToDictConverter()
-    nexus_file = nexus.nxload("nexus_files/SANS2D_example.nxs")
-    tree = converter.convert(nexus_file, streams)
-    write_command, stop_command = create_writer_commands(tree, "SANS2D_example_output.nxs")
-    object_to_json_file(write_command, "SANS2D_example.json")
-    object_to_json_file(stop_command, "stop_SANS2D_example.json")
-
