@@ -53,7 +53,12 @@ class NexusToDictConverter:
         return data, dtype, size
 
     def _handle_attributes(self, root, root_dict):
+        if root.nxclass and root.nxclass is not "NXfield":
+            root_dict["attributes"] = [{"name": "NX_class",
+                                        "values": root.nxclass}]
         if root.attrs:
+            if "attributes" not in root_dict:
+                root_dict["attributes"] = []
             root_dict["attributes"] = []
             for attr_name, attr in root.attrs.items():
                 data, dtype, size = self._get_data_and_type(attr)
@@ -68,9 +73,6 @@ class NexusToDictConverter:
         root_dict = {
             "type": "group",
             "name": root.nxname,
-            "attributes": {
-                "NX_class": root.nxclass
-            },
             "children": []
         }
         # Add the entries
