@@ -36,14 +36,32 @@ class NexusToDictConverter:
         return root_dict
 
     @staticmethod
-    def _handle_attributes(root, root_dict):
+    def _get_data_and_type(root):
+        size = 1
+        data = root.nxdata
+        dtype = str(root.dtype)
+        if isinstance(data, numpy.ndarray):
+            size = data.shape
+            data = data.tolist()
+        if dtype[:2] == '|S':
+            data = data.decode('utf-8')
+            dtype = 'string'
+        elif dtype == "float64":
+            dtype = "double"
+        elif dtype == "float32":
+            dtype = "float"
+        return data, dtype, size
+
+    def _handle_attributes(self, root, root_dict):
         if root.attrs:
+            root_dict["attributes"] = []
             for attr_name, attr in root.attrs.items():
-                if isinstance(attr, nexus.tree.NXattr):
-                    attr = attr.nxdata
-                if isinstance(attr, numpy.ndarray):
-                    attr = attr.tolist()
-                root_dict["attributes"][attr_name] = attr
+                data, dtype, size = self._get_data_and_type(attr)
+                new_attribute = {"name": attr_name,
+                                 "values": data}
+                if dtype != "object":
+                    new_attribute["type"] = dtype
+                root_dict["attributes"].append(new_attribute)
         return root_dict
 
     def _handle_group(self, root):
@@ -69,22 +87,8 @@ class NexusToDictConverter:
 
         return root_dict
 
-    @staticmethod
-    def _handle_dataset(root):
-        size = 1
-        data = root.nxdata
-        dataset_type = str(root.dtype)
-        if isinstance(data, numpy.ndarray):
-            size = data.shape
-            data = data.tolist()
-        if dataset_type[:2] == '|S':
-            data = data.decode('utf-8')
-            dataset_type = 'string'
-        elif dataset_type == "float64":
-            dataset_type = "double"
-        elif dataset_type == "float32":
-            dataset_type = "float"
-
+    def _handle_dataset(self, root):
+        data, dataset_type, size = self._get_data_and_type(root)
         root_dict = {
             "type": "dataset",
             "name": root.nxname,
