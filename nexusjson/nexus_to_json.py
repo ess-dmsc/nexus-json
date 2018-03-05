@@ -95,8 +95,7 @@ class NexusToDictConverter:
             "dataset": {
                 "type": dataset_type
             },
-            "values": data,
-            "attributes": {}
+            "values": data
         }
         if size != 1:
             root_dict['dataset']['size'] = size
