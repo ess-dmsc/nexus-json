@@ -32,7 +32,11 @@ class NexusToDictConverter:
         else:
             root_dict = self._handle_dataset(root)
 
-        # Assign the attributes
+        root_dict = self._handle_attributes(root, root_dict)
+        return root_dict
+
+    @staticmethod
+    def _handle_attributes(root, root_dict):
         if root.attrs:
             for attr_name, attr in root.attrs.items():
                 if isinstance(attr, nexus.tree.NXattr):
