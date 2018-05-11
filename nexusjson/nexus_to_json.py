@@ -9,10 +9,14 @@ class NexusToDictConverter:
     Class used to convert nexus format root to python dict
     """
 
-    def __init__(self, truncate_large_datasets=False):
+    def __init__(self, truncate_large_datasets=False, large=10):
+        """
+        :param truncate_large_datasets: if True truncates datasets with any dimension larger than large
+        :param large: dimensions larger than this are considered large
+        """
         self._kafka_streams = {}
         self.truncate_large_datasets = truncate_large_datasets
-        self.large = 10  # greater than this size means large
+        self.large = large
 
     def convert(self, nexus_root, streams):
         """
