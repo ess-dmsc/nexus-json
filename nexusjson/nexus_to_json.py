@@ -1,4 +1,4 @@
-import numpy
+import numpy as np
 import nexusformat.nexus as nexus
 import json
 import uuid
@@ -9,8 +9,10 @@ class NexusToDictConverter:
     Class used to convert nexus format root to python dict
     """
 
-    def __init__(self):
+    def __init__(self, truncate_large_datasets=False):
         self._kafka_streams = {}
+        self.truncate_large_datasets = truncate_large_datasets
+        self.large = 10  # greater than this size means large
 
     def convert(self, nexus_root, streams):
         """
@@ -36,12 +38,20 @@ class NexusToDictConverter:
         return root_dict
 
     @staticmethod
-    def _get_data_and_type(root):
+    def truncate_if_large(size, data):
+        for dim_number, dim_size in enumerate(size):
+            if dim_size > 10:
+                size[dim_number] = 10
+        data.resize(size)
+
+    def _get_data_and_type(self, root):
         size = 1
         data = root.nxdata
         dtype = str(root.dtype)
-        if isinstance(data, numpy.ndarray):
+        if isinstance(data, np.ndarray):
             size = data.shape
+            if self.truncate_large_datasets:
+                self.truncate_if_large(size, data)
             data = data.tolist()
         if dtype[:2] == '|S':
             data = data.decode('utf-8')
