@@ -7,4 +7,7 @@ setup(name='nexusjson',
       author='Matthew D Jones',
       license='BSD-2-Clause',
       packages=['nexusjson'],
-      zip_safe=False)
+      zip_safe=False,
+      install_requires=['numpy',
+                        'nexusformat']
+      )
