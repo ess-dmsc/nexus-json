@@ -83,7 +83,8 @@ class NexusToDictConverter:
                                  "values": data}
                 if dtype != "object":
                     new_attribute["type"] = dtype
-                root_dict["attributes"].append(new_attribute)
+                if data != "NXgroup":
+                    root_dict["attributes"].append(new_attribute)
         return root_dict
 
     def _handle_group(self, root):
