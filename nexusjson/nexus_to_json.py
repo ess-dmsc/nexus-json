@@ -58,7 +58,10 @@ class NexusToDictConverter:
                 self.truncate_if_large(size, data)
             data = data.tolist()
         if dtype[:2] == '|S':
-            data = data.decode('utf-8')
+            if isinstance(data, list):
+                data = [str_item.decode('utf-8') for str_item in data]
+            else:
+                data = data.decode('utf-8')
             dtype = 'string'
         elif dtype == "float64":
             dtype = "double"
