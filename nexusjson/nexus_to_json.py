@@ -105,8 +105,8 @@ class NexusToDictConverter:
         if root.nxpath in self._links:
             root_dict["children"].append({
                 "type": "link",
-                "name": self._links[root.nxpath].name,
-                "target": self._links[root.nxpath].target
+                "name": self._links[root.nxpath]["name"],
+                "target": self._links[root.nxpath]["target"]
             })
         elif entries:
             for entry in entries:
