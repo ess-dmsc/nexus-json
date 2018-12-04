@@ -15,18 +15,21 @@ class NexusToDictConverter:
         :param large: dimensions larger than this are considered large
         """
         self._kafka_streams = {}
+        self._links = {}
         self.truncate_large_datasets = truncate_large_datasets
         self.large = large
 
-    def convert(self, nexus_root, streams):
+    def convert(self, nexus_root, streams, links):
         """
         Converts the given nexus_root to dict with correct replacement of
         the streams
+        :param links:
         :param nexus_root
         :param streams:
         :return: dictionary
         """
         self._kafka_streams = streams
+        self._links = links
         return {
             "children": [self._root_to_dict(entry)
                          for _, entry in nexus_root.entries.items()]
@@ -98,6 +101,12 @@ class NexusToDictConverter:
             root_dict["children"].append({
                 "type": "stream",
                 "stream": self._kafka_streams[root.nxpath]
+            })
+        if root.nxpath in self._links:
+            root_dict["children"].append({
+                "type": "link",
+                "name": self._links[root.nxpath].name,
+                "target": self._links[root.nxpath].target
             })
         elif entries:
             for entry in entries:
