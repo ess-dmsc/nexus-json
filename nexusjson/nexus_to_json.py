@@ -102,7 +102,7 @@ class NexusToDictConverter:
                 "type": "stream",
                 "stream": self._kafka_streams[root.nxpath]
             })
-        if root.nxpath in self._links:
+        elif root.nxpath in self._links:
             root_dict["children"].append({
                 "type": "link",
                 "name": self._links[root.nxpath]["name"],
