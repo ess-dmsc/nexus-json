@@ -143,9 +143,20 @@ def object_to_json_file(tree_dict, filename):
         json.dump(tree_dict, outfile, indent=2, sort_keys=False)
 
 
-def create_writer_commands(nexus_structure, output_filename, broker="localhost:9092", job_id="", start_time=None):
+def create_writer_commands(nexus_structure, output_filename, broker="localhost:9092", job_id="", start_time=None,
+                           stop_time=None):
+    """
+    :param nexus_structure:
+    :param output_filename:
+    :param broker:
+    :param job_id:
+    :param start_time: ms from unix epoch
+    :param stop_time: ms from unix epoch
+    :return:
+    """
     if not job_id:
         job_id = str(uuid.uuid1())
+
     write_cmd = {
         "cmd": "FileWriter_new",
         "broker": broker,
@@ -157,8 +168,12 @@ def create_writer_commands(nexus_structure, output_filename, broker="localhost:9
     }
     if start_time is not None:
         write_cmd['start_time'] = start_time
+
     stop_cmd = {
         "cmd": "FileWriter_stop",
         "job_id": job_id
     }
+    if stop_time is not None:
+        stop_cmd['stop_time'] = stop_time
+
     return write_cmd, stop_cmd
