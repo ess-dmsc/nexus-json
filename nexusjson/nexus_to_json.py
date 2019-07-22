@@ -1,4 +1,5 @@
 import numpy as np
+import nexusformat.nexus as nexus
 import json
 import uuid
 
