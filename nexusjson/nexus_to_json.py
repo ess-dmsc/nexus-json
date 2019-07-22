@@ -9,7 +9,7 @@ class NexusToDictConverter:
     Class used to convert nexus format root to python dict
     """
 
-    def __init__(self, truncate_large_datasets=False, large=10):
+    def __init__(self, truncate_large_datasets: bool = False, large: int = 10):
         """
         :param truncate_large_datasets: if True truncates datasets with any dimension larger than large
         :param large: dimensions larger than this are considered large
@@ -19,7 +19,7 @@ class NexusToDictConverter:
         self.truncate_large_datasets = truncate_large_datasets
         self.large = large
 
-    def convert(self, nexus_root, streams, links):
+    def convert(self, nexus_root: nexus.NXroot, streams: dict, links: dict) -> dict:
         """
         Converts the given nexus_root to dict with correct replacement of
         the streams
@@ -35,7 +35,7 @@ class NexusToDictConverter:
                          for _, entry in nexus_root.entries.items()]
         }
 
-    def _root_to_dict(self, root):
+    def _root_to_dict(self, root: nexus.NXgroup) -> dict:
         if hasattr(root, 'entries'):
             root_dict = self._handle_group(root)
         else:
