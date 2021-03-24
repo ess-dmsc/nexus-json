@@ -2,6 +2,7 @@ import numpy as np
 import nexusformat.nexus as nexus
 import json
 import uuid
+import copy
 
 
 class NexusToDictConverter:
@@ -73,7 +74,7 @@ class NexusToDictConverter:
         return data, dtype, size
 
     def _handle_attributes(self, root, root_dict):
-        if root.nxclass and root.nxclass is not "NXfield" and root.nxclass is not "NXgroup":
+        if root.nxclass and root.nxclass != "NXfield" and root.nxclass != "NXgroup":
             root_dict["attributes"] = [{"name": "NX_class",
                                         "values": root.nxclass}]
         if root.attrs:
@@ -98,9 +99,11 @@ class NexusToDictConverter:
         # Add the entries
         entries = root.entries
         if root.nxpath in self._kafka_streams:
+            module_config = copy.copy(self._kafka_streams[root.nxpath])
+            writer_module = module_config.pop("module")
             root_dict["children"].append({
-                "type": "stream",
-                "stream": self._kafka_streams[root.nxpath]
+                "module": writer_module,
+                "config": module_config,
             })
         elif root.nxpath in self._links:
             root_dict["children"].append({
@@ -118,15 +121,13 @@ class NexusToDictConverter:
     def _handle_dataset(self, root):
         data, dataset_type, size = self._get_data_and_type(root)
         root_dict = {
-            "type": "dataset",
-            "name": root.nxname,
-            "dataset": {
-                "type": dataset_type
-            },
-            "values": data
+            "module": "dataset",
+            "config": {
+                "name": root.nxname,
+                "type": dataset_type,
+                "values": data
+            }
         }
-        if size != 1:
-            root_dict['dataset']['size'] = size
 
         return root_dict
 
