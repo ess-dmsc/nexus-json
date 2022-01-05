@@ -5,7 +5,7 @@ from nexusjson.nexus_to_json import NexusToDictConverter, create_writer_commands
 Produce JSON commands for the file writer for a SANS2D NeXus file
 """
 
-event_data_path = "/raw_data_1/detector_1_events"
+event_data_path = "/raw_data_1/instrument/detector_1"
 event_data_stream_options = {
     "topic": "TEST_events",
     "source": "TEST",
