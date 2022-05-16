@@ -79,7 +79,7 @@ class NexusToDictConverter:
         if root.attrs:
             if "attributes" not in root_dict:
                 root_dict["attributes"] = []
-            root_dict["attributes"] = []
+
             for attr_name, attr in root.attrs.items():
                 data, dtype, size = self._get_data_and_type(attr)
                 new_attribute = {"name": attr_name,
@@ -105,7 +105,7 @@ class NexusToDictConverter:
         elif root.nxpath in self._links:
             root_dict["children"].append({
                 "type": "link",
-                "name": self._links[root.nxpath]["name"],
+                    "name": self._links[root.nxpath]["name"],
                 "target": self._links[root.nxpath]["target"]
             })
         elif entries:
