@@ -73,11 +73,10 @@ class NexusToDictConverter:
             dtype = "double"
         elif dtype == "float32":
             dtype = "float"
-        if not isinstance(data, (bytes, bytearray)):
-            if isinstance(data, list):
-                data = [float(piece) if isinstance(piece, str) and piece.replace('.', '').isnumeric() else piece for piece in data]
-            elif isinstance(data, str) and data.replace('.', '').isnumeric():
-                data = float(data)
+        if isinstance(data, list):
+            data = [float(piece) if isinstance(piece, str) and piece.replace('.', '').isnumeric() else piece for piece in data]
+        elif isinstance(data, str) and data.replace('.', '').isnumeric():
+            data = float(data)
         return data, dtype
 
     def _handle_attributes(self, root, root_dict):
