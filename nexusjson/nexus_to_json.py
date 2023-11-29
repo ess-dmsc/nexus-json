@@ -71,7 +71,12 @@ class NexusToDictConverter:
             dtype = "double"
         elif dtype == "float32":
             dtype = "float"
-        return data, dtype, size
+        if not isinstance(data, (bytes, bytearray)):
+            if isinstance(data, list):
+                data = [float(piece) if isinstance(piece, str) and piece.replace('.','').isnumeric() else piece for piece in data]
+            elif data.replace('.','').isnumeric():
+                data = float(data)
+        return data, dtype
 
     def _handle_attributes(self, root, root_dict):
         if root.nxclass and root.nxclass != "NXfield" and root.nxclass != "NXgroup":
@@ -82,7 +87,7 @@ class NexusToDictConverter:
                 root_dict["attributes"] = []
 
             for attr_name, attr in root.attrs.items():
-                data, dtype, size = self._get_data_and_type(attr)
+                data, dtype = self._get_data_and_type(attr)
                 new_attribute = {"name": attr_name,
                                  "values": data}
                 if dtype != "object":
@@ -119,7 +124,10 @@ class NexusToDictConverter:
         return root_dict
 
     def _handle_dataset(self, root):
-        data, dataset_type, size = self._get_data_and_type(root)
+        data, dataset_type = self._get_data_and_type(root)
+#        data = str(data, 'utf-8') if not isinstance(data, list) else data
+        if isinstance(data, list):
+            data = [str(str_item, 'utf-8') for str_item in data if isinstance(str_item, (bytes, bytearray))]
         root_dict = {
             "module": "dataset",
             "config": {
@@ -140,41 +148,5 @@ def object_to_json_file(tree_dict, filename):
     :param tree_dict: Root node of the tree
     :param filename: Name for the output file
     """
-    with open(filename, 'w') as outfile:
+    with open(filename, 'w', encoding='utf-8') as outfile:
         json.dump(tree_dict, outfile, indent=2, sort_keys=False)
-
-
-def create_writer_commands(nexus_structure, output_filename, broker="localhost:9092", job_id="", start_time=None,
-                           stop_time=None):
-    """
-    :param nexus_structure:
-    :param output_filename:
-    :param broker:
-    :param job_id:
-    :param start_time: ms from unix epoch
-    :param stop_time: ms from unix epoch
-    :return:
-    """
-    if not job_id:
-        job_id = str(uuid.uuid1())
-
-    write_cmd = {
-        "cmd": "FileWriter_new",
-        "broker": broker,
-        "job_id": job_id,
-        "file_attributes": {
-            "file_name": output_filename
-        },
-        "nexus_structure": nexus_structure
-    }
-    if start_time is not None:
-        write_cmd['start_time'] = start_time
-
-    stop_cmd = {
-        "cmd": "FileWriter_stop",
-        "job_id": job_id
-    }
-    if stop_time is not None:
-        stop_cmd['stop_time'] = stop_time
-
-    return write_cmd, stop_cmd
