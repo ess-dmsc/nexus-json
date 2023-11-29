@@ -88,7 +88,6 @@ class NexusToDictConverter:
                 root_dict["attributes"] = []
 
             for attr_name, attr in root.attrs.items():
-                print(attr_name)
                 data, dtype = self._get_data_and_type(attr)
                 new_attribute = {"name": attr_name,
                                  "values": data}
@@ -127,9 +126,6 @@ class NexusToDictConverter:
 
     def _handle_dataset(self, root):
         data, dataset_type = self._get_data_and_type(root)
-#        data = str(data, 'utf-8') if not isinstance(data, list) else data
-        if isinstance(data, list):
-            data = [str(str_item, 'utf-8') for str_item in data if isinstance(str_item, (bytes, bytearray))]
         root_dict = {
             "module": "dataset",
             "config": {
