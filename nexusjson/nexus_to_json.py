@@ -61,11 +61,13 @@ class NexusToDictConverter:
             if self.truncate_large_datasets:
                 self.truncate_if_large(size, data)
             data = data.tolist()
+        if len(data) == 1:
+            data = data[0]
+        if isinstance(data, bytes):
+            data = str(data, 'utf-8')
         if dtype[:2] == '|S':
             if isinstance(data, list):
                 data = [str_item.decode('utf-8') for str_item in data]
-            else:
-                data = data.decode('utf-8')
             dtype = 'string'
         elif dtype == "float64":
             dtype = "double"
@@ -73,8 +75,8 @@ class NexusToDictConverter:
             dtype = "float"
         if not isinstance(data, (bytes, bytearray)):
             if isinstance(data, list):
-                data = [float(piece) if isinstance(piece, str) and piece.replace('.','').isnumeric() else piece for piece in data]
-            elif data.replace('.','').isnumeric():
+                data = [float(piece) if isinstance(piece, str) and piece.replace('.', '').isnumeric() else piece for piece in data]
+            elif isinstance(data, str) and data.replace('.', '').isnumeric():
                 data = float(data)
         return data, dtype
 
@@ -87,6 +89,7 @@ class NexusToDictConverter:
                 root_dict["attributes"] = []
 
             for attr_name, attr in root.attrs.items():
+                print(attr_name)
                 data, dtype = self._get_data_and_type(attr)
                 new_attribute = {"name": attr_name,
                                  "values": data}
