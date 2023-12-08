@@ -68,11 +68,13 @@ class NexusToDictConverter:
         if dtype[:2] == '|S':
             if isinstance(data, list):
                 data = [str_item.decode('utf-8') for str_item in data]
-            dtype = 'string'
+            dtype = "string"
         elif dtype == "float64":
             dtype = "double"
         elif dtype == "float32":
             dtype = "float"
+        if dtype == "object":
+            dtype = "string"
         if isinstance(data, list):
             data = [float(piece) if isinstance(piece, str) and piece.replace('.', '').isnumeric() else piece for piece in data]
         elif isinstance(data, str) and data.replace('.', '').isnumeric():
