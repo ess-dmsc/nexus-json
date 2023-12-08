@@ -1,8 +1,7 @@
-import numpy as np
-import nexusformat.nexus as nexus
+""""Convert HDF files produced at ESS back to the JSON template"""
 import json
-import uuid
-import copy
+import numpy as np
+from nexusformat import nexus
 
 
 class NexusToDictConverter:
@@ -15,22 +14,16 @@ class NexusToDictConverter:
         :param truncate_large_datasets: if True truncates datasets with any dimension larger than large
         :param large: dimensions larger than this are considered large
         """
-        self._kafka_streams = {}
-        self._links = {}
         self.truncate_large_datasets = truncate_large_datasets
         self.large = large
 
-    def convert(self, nexus_root: nexus.NXroot, streams: dict, links: dict) -> dict:
+    def convert(self, nexus_root: nexus.NXroot) -> dict:
         """
         Converts the given nexus_root to dict with correct replacement of
         the streams
-        :param links:
         :param nexus_root
-        :param streams:
         :return: dictionary
         """
-        self._kafka_streams = streams
-        self._links = links
         return {
             "children": [self._root_to_dict(entry)
                          for _, entry in nexus_root.entries.items()]
@@ -47,6 +40,10 @@ class NexusToDictConverter:
 
     @staticmethod
     def truncate_if_large(size, data):
+        """
+        :param size: new maximum dimension
+        :param data: data to shrink
+        """
         for dim_number, dim_size in enumerate(size):
             if dim_size > 10:
                 size[dim_number] = 10
@@ -106,20 +103,7 @@ class NexusToDictConverter:
         }
         # Add the entries
         entries = root.entries
-        if root.nxpath in self._kafka_streams:
-            module_config = copy.copy(self._kafka_streams[root.nxpath])
-            writer_module = module_config.pop("module")
-            root_dict["children"].append({
-                "module": writer_module,
-                "config": module_config,
-            })
-        elif root.nxpath in self._links:
-            root_dict["children"].append({
-                "type": "link",
-                    "name": self._links[root.nxpath]["name"],
-                "target": self._links[root.nxpath]["target"]
-            })
-        elif entries:
+        if entries:
             for entry in entries:
                 child_dict = self._root_to_dict(entries[entry])
                 root_dict["children"].append(child_dict)

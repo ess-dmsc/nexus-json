@@ -1,0 +1,2 @@
+[console_scripts]
+nexus2json = nexus_json.__main__:main
