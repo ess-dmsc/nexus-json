@@ -61,8 +61,8 @@ class NexusToDictConverter:
             if self.truncate_large_datasets:
                 self.truncate_if_large(size, data)
             data = data.tolist()
-        if len(data) == 1:
-            data = data[0]
+        if len(data) == 1 and isinstance(data[0], bytes):
+            data[0] = str(data[0], 'utf-8')
         if isinstance(data, bytes):
             data = str(data, 'utf-8')
         if dtype[:2] == '|S':
