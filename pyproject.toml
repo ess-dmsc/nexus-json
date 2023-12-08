@@ -1,0 +1,23 @@
+[project]
+name = "nexus-json"
+version = "0.1.0"
+authors = [
+  { name="George O'Neill", email="george.oneill@ess.eu" },
+	{ name="Matthew D. Jones" }
+]
+description = "Convert HDF files produced at ESS back to the JSON template"
+classifiers = [
+  "Programming Language :: Python :: 3"
+]
+readme = "README.md"
+requires-python = ">=3.1"
+dependencies = [
+  "numpy",
+  "nexusformat"
+]
+
+[project.urls]
+"Homepage"="https://github.com/ess-dmsc/nexus-json"
+
+[project.scripts]
+nexus2json="nexus_json.__main__:main"

@@ -1,8 +1,7 @@
-import numpy as np
-import nexusformat.nexus as nexus
+""""Convert HDF files produced at ESS back to the JSON template"""
 import json
-import uuid
-import copy
+import numpy as np
+from nexusformat import nexus
 
 
 class NexusToDictConverter:
@@ -15,22 +14,16 @@ class NexusToDictConverter:
         :param truncate_large_datasets: if True truncates datasets with any dimension larger than large
         :param large: dimensions larger than this are considered large
         """
-        self._kafka_streams = {}
-        self._links = {}
         self.truncate_large_datasets = truncate_large_datasets
         self.large = large
 
-    def convert(self, nexus_root: nexus.NXroot, streams: dict, links: dict) -> dict:
+    def convert(self, nexus_root: nexus.NXroot) -> dict:
         """
         Converts the given nexus_root to dict with correct replacement of
         the streams
-        :param links:
         :param nexus_root
-        :param streams:
         :return: dictionary
         """
-        self._kafka_streams = streams
-        self._links = links
         return {
             "children": [self._root_to_dict(entry)
                          for _, entry in nexus_root.entries.items()]
@@ -47,6 +40,10 @@ class NexusToDictConverter:
 
     @staticmethod
     def truncate_if_large(size, data):
+        """
+        :param size: new maximum dimension
+        :param data: data to shrink
+        """
         for dim_number, dim_size in enumerate(size):
             if dim_size > 10:
                 size[dim_number] = 10
@@ -61,17 +58,25 @@ class NexusToDictConverter:
             if self.truncate_large_datasets:
                 self.truncate_if_large(size, data)
             data = data.tolist()
+        if len(data) == 1 and isinstance(data[0], bytes):
+            data[0] = str(data[0], 'utf-8')
+        if isinstance(data, bytes):
+            data = str(data, 'utf-8')
         if dtype[:2] == '|S':
             if isinstance(data, list):
                 data = [str_item.decode('utf-8') for str_item in data]
-            else:
-                data = data.decode('utf-8')
-            dtype = 'string'
+            dtype = "string"
         elif dtype == "float64":
             dtype = "double"
         elif dtype == "float32":
             dtype = "float"
-        return data, dtype, size
+        if dtype == "object":
+            dtype = "string"
+        if isinstance(data, list):
+            data = [float(piece) if isinstance(piece, str) and piece.replace('.', '').isnumeric() else piece for piece in data]
+        elif isinstance(data, str) and data.replace('.', '').isnumeric():
+            data = float(data)
+        return data, dtype
 
     def _handle_attributes(self, root, root_dict):
         if root.nxclass and root.nxclass != "NXfield" and root.nxclass != "NXgroup":
@@ -82,7 +87,7 @@ class NexusToDictConverter:
                 root_dict["attributes"] = []
 
             for attr_name, attr in root.attrs.items():
-                data, dtype, size = self._get_data_and_type(attr)
+                data, dtype = self._get_data_and_type(attr)
                 new_attribute = {"name": attr_name,
                                  "values": data}
                 if dtype != "object":
@@ -98,20 +103,7 @@ class NexusToDictConverter:
         }
         # Add the entries
         entries = root.entries
-        if root.nxpath in self._kafka_streams:
-            module_config = copy.copy(self._kafka_streams[root.nxpath])
-            writer_module = module_config.pop("module")
-            root_dict["children"].append({
-                "module": writer_module,
-                "config": module_config,
-            })
-        elif root.nxpath in self._links:
-            root_dict["children"].append({
-                "type": "link",
-                    "name": self._links[root.nxpath]["name"],
-                "target": self._links[root.nxpath]["target"]
-            })
-        elif entries:
+        if entries:
             for entry in entries:
                 child_dict = self._root_to_dict(entries[entry])
                 root_dict["children"].append(child_dict)
@@ -119,7 +111,7 @@ class NexusToDictConverter:
         return root_dict
 
     def _handle_dataset(self, root):
-        data, dataset_type, size = self._get_data_and_type(root)
+        data, dataset_type = self._get_data_and_type(root)
         root_dict = {
             "module": "dataset",
             "config": {
@@ -140,41 +132,5 @@ def object_to_json_file(tree_dict, filename):
     :param tree_dict: Root node of the tree
     :param filename: Name for the output file
     """
-    with open(filename, 'w') as outfile:
+    with open(filename, 'w', encoding='utf-8') as outfile:
         json.dump(tree_dict, outfile, indent=2, sort_keys=False)
-
-
-def create_writer_commands(nexus_structure, output_filename, broker="localhost:9092", job_id="", start_time=None,
-                           stop_time=None):
-    """
-    :param nexus_structure:
-    :param output_filename:
-    :param broker:
-    :param job_id:
-    :param start_time: ms from unix epoch
-    :param stop_time: ms from unix epoch
-    :return:
-    """
-    if not job_id:
-        job_id = str(uuid.uuid1())
-
-    write_cmd = {
-        "cmd": "FileWriter_new",
-        "broker": broker,
-        "job_id": job_id,
-        "file_attributes": {
-            "file_name": output_filename
-        },
-        "nexus_structure": nexus_structure
-    }
-    if start_time is not None:
-        write_cmd['start_time'] = start_time
-
-    stop_cmd = {
-        "cmd": "FileWriter_stop",
-        "job_id": job_id
-    }
-    if stop_time is not None:
-        stop_cmd['stop_time'] = stop_time
-
-    return write_cmd, stop_cmd
